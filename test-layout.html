@@ -1,0 +1,22 @@
+<html>
+    <style>
+        html {
+            background: #555;
+            color: white;
+        }
+        #view {
+            display:inline-block;
+            width:100%;
+            height:100%;
+        }
+    </style>
+    <table>
+        <tr><td>Rows</td><td><input id="nrows" value="5"></input></td></tr>
+        <tr><td>Columns</td><td><input id="ncols" value="5"></input></td></tr>
+        <tr><td>Randomness</td><td><input id="rand" value="4"></input></td></tr>
+    </table>
+    <button onclick="run()">Run</button> <button onclick="download()">Download</button>
+    <br />
+    <svg id="view"></svg>
+    <script type="module" src="index.js"></script>
+</html>

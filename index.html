@@ -1,0 +1,124 @@
+<html>
+    <style>
+        html {
+            background: #555;
+            color: white;
+        }
+        #view {
+            display:inline-block;
+            width:100%;
+            height:100%;
+        }
+    </style>
+    <svg id="view">
+        <defs>
+            <filter id="ds">
+                <feGaussianBlur result="blurOut" in="SourceAlpha" stdDeviation="2" />
+                <feBlend in="SourceGraphic" in2="blurOut" mode="normal" />
+            </filter>
+            <image id="img" href="img/kitten.jpg" width="1000px"/>
+        </defs>
+    </svg>
+    <script type="module">
+        import {getScale, puzzleSides, puzzlePieceBezier} from './jigsaw.js';
+        const scale = getScale();
+        const [rows, columns, rand, width] = [5, 6, 4, 1000];
+        const scaleX = width/(scale*25*columns);
+        const scaleY = scaleX*(1080/1920)*columns/rows;
+        const sides = puzzleSides(rows, columns, rand);
+
+        let mouseDown = false;
+        let movingPiece = null;
+        let origPageX, origPageY;
+        let dx0, dy0;
+
+        const getTranslation = (transform) => {
+            return transform.match(/(\d*)px/g).map((o)=>Number(o.replace("px","")));
+        };
+
+        let counter = 1;
+        const addClipPath = (d) => {
+            const _svgNS = 'http://www.w3.org/2000/svg';
+            const defs = document.querySelector("svg > defs");
+            const c = document.createElementNS(_svgNS, "clipPath");
+            const p = document.createElementNS(_svgNS, "path");
+            c.id = `p${counter}`;
+            p.setAttributeNS(null, "transform", `scale(${scaleX}, ${scaleY})`);
+            p.setAttributeNS(null, "d", d);
+            c.appendChild(p);
+            defs.appendChild(c);
+
+            const svg = document.querySelector("svg");
+            const g = document.createElementNS(_svgNS, "g");
+            g.setAttributeNS(null, "filter", "url(#ds)");
+            const u = document.createElementNS(_svgNS, "use");
+            u.id = `q${counter}`;
+            u.classList.add("piece");
+            u.setAttributeNS(null, "clip-path", `url(#p${counter})`);
+            u.setAttributeNS('http://www.w3.org/1999/xlink', "xlink:href", "#img");
+            g.appendChild(u);
+            svg.appendChild(g);
+
+            counter++;
+        };
+
+        const addMouseMovementEventListeners = () => {
+            document.addEventListener('mousemove', (e) => {
+                if(!mouseDown) {
+                    return;
+                }
+                if(movingPiece === null) {
+                    return;
+                }
+                const {pageX, pageY} = e;
+                const dx = pageX - origPageX;
+                const dy = pageY - origPageY;
+                movingPiece.style.transform = `translate(${dx0+dx}px, ${dy0+dy}px)`;
+            });
+            document.addEventListener('mouseup', (e) => {
+                mouseDown = false;
+                movingPiece = null;
+            });
+        };
+
+        const addPuzzlePieces = () => {
+            for(let i=0;i<rows;i++) {
+                for(let j=0;j<columns;j++) {
+                    addClipPath(puzzlePieceBezier(sides, j, i));
+                }
+            }
+        };
+
+        const addEventListenerOnPuzzlePieces = () => {
+            document.querySelectorAll(".piece").forEach((sel)=>{
+                sel.addEventListener("mousedown", (e) => {
+                    mouseDown = true;
+                    movingPiece = e.target;
+                    origPageX = e.pageX;
+                    origPageY = e.pageY;
+
+                    // get piece position
+                    let transform = movingPiece.style.transform;
+                    if(transform) {
+                        [dx0, dy0] = getTranslation(transform);
+                    } else {
+                        [dx0, dy0] = [0, 0];
+                    }
+
+                    // move piece up in the layout
+                    const piece = e.target.parentElement;
+                    const allPieces = document.querySelectorAll(".piece");
+                    const topPiece = allPieces[allPieces.length-1].parentElement;
+                    topPiece.after(piece);
+                })});
+        };
+
+        const main = () => {
+            addMouseMovementEventListeners();
+            addPuzzlePieces();
+            addEventListenerOnPuzzlePieces();
+        };
+
+        main();
+    </script>
+</html>
